@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "agent_c", path: "../../agent_c"
+
+gem "rake"
+gem "minitest"
+gem "debug"

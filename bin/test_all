@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+set -ex
+bin/rake test
+(cd template && bin/rake test)

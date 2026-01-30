@@ -1,0 +1,50 @@
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "rake/testtask"
+
+require_relative "./lib/autoload"
+
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = FileList["test/**/*_test.rb"]
+  t.verbose = true
+  t.warning = false
+end
+
+desc "Run the pipeline"
+task :run do
+  batch = AgentC::Batch.new(**Config::BATCH)
+
+  ["english", "spanish"].map do |language|
+    record = batch.store.summary.find_or_create_by!(language:)
+
+    batch.add_task(record)
+  end
+
+  batch.call
+
+  puts "Summary report:"
+  puts batch.report
+  puts "---\n"
+
+  batch.store.task.all.each do |task|
+    next unless task.done?
+
+    full_path = File.join(
+      task.workspace.dir,
+      task.record.summary_path
+    )
+    puts "task: #{task.id} - wrote summary to #{full_path}"
+  end
+end
+
+task :console do
+  batch = AgentC::Batch.new(**Config::BATCH)
+
+  # poke around the data here
+  binding.irb
+end
+
+task default: :test

@@ -1,0 +1,10 @@
+AllCops:
+  Exclude: [ "bin/*" ]
+  TargetRubyVersion: 3.2
+  DisabledByDefault: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+Layout/EmptyLineAfterMagicComment:
+  Enabled: true

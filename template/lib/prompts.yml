@@ -1,0 +1,57 @@
+en:
+  # This prompt will be used by all steps, it will be cached
+  # to save $$$.
+  global_summary_cache: &global_summary_cache |
+    This project is a ruby gem. You will be summarizing a file using
+    the language specified.
+  pick_a_random_file:
+    tools: [read_file, grep, dir_glob]
+    cached_prompts:
+    - *global_summary_cache
+    prompt: |
+      # YOUR JOB
+
+      Find a random ruby file within the repository. Bonus points for picking
+      a file with many lines.
+    response_schema:
+      input_path:
+        description: |
+          The path to the file you have chosen
+
+  summarize_the_file:
+    tools: [read_file]
+    cached_prompts:
+    - *global_summary_cache
+    prompt: |
+      You will be given a file path. Your job is to summarize the file for a
+      developer to read and understand.
+
+      You must write your summary using the language provided.
+
+      language: %{language}
+      file path: %{input_path}
+    response_schema:
+      summary_body:
+        description: |
+          Your summary of the file
+
+  write_summary_to_disk:
+    tools: [edit_file]
+    cached_prompts:
+    - *global_summary_cache
+    prompt: |
+      You will be given a file path and some summary text. Write the text to the
+      a well-named file at the top-level of the repository. You will return the
+      path that you wrote.
+
+      IMPORTANT: you **must** invoke the edit_file tool to process this request.
+
+      summary:
+      ---BEGIN-SUMMARY---
+      %{summary_body}
+      ---END-SUMMARY---
+
+    response_schema:
+      summary_path:
+        description: |
+          The path to the file you wrote.

@@ -1,0 +1,53 @@
+en:
+  agent:
+    chat:
+      refine:
+        system_message: |
+          ---BEGIN-SYSTEM-MESSAGE---
+          Hello, this conversation is currently being "refined". That means,
+          this prompt was already asked to an AI and an answer was received.
+
+          The user is requesting that you "refine" the answer given by the
+          prior AI conversation. Your goal is to review the prior answer,
+          evaluate its accuracy. If you determine that some changes should be
+          made, then adjust the answer and respond with the corrected version.
+          It is possible that the prior answer is accurate and acceptable. In
+          that case, simply respond with the prior answer as-is.
+
+          Here is the answer previously given to this prompt:
+
+          ---BEGIN-PRIOR-ANSWER---
+          %{prior_answer}
+          ---END-PRIOR-ANSWER---
+          ---END-SYSTEM-MESSAGE---
+
+          %{original_message}
+      get_result:
+        json_instructions: |
+          Your response will be parsed as JSON directly by passing it to JSON.parse.
+
+          DO NOT add any commentary to the JSON response.
+          DO NOT format your response as markdown
+          DO NOT begin your response with "```" OR "```json"
+
+          YOUR RESPONSE SHOULD BE PURE JSON AND BEGIN WITH ONE OF THE FOLLOWING: {["
+        schema_requirement: |
+          Your answer to the following request must be JSON that adheres to
+          the following schema.
+
+          ---BEGIN-JSON-SCHEMA---
+          %{json_schema}
+          ---END-JSON-SCHEMA---
+        request_wrapper: |
+          ---BEGIN-REQUEST---
+          %{msg}
+          ---END-REQUEST---
+        schema_validation_error: |
+          Your response did not adhere to the given schema. Its errors:
+          %{errors}
+        json_parse_error: |
+          Your response failed to parse as JSON. RESPOND WITH ONLY VALID JSON
+          NOTHING ELSE.
+  task_1:
+    pending: |
+      Translate the word "%{word}" to %{language}.

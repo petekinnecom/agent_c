@@ -1,0 +1,7 @@
+**/log/**
+.claude
+tmp/
+*.sqlite*
+*.db
+*.log
+.bundle/
