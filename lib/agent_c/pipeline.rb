@@ -42,13 +42,21 @@ module AgentC
             if block
               instance_exec(&block)
             elsif params.empty?
+              i18n_attributes = (
+                if record.respond_to?(:i18n_attributes)
+                  record.i18n_attributes
+                else
+                  record.attributes
+                end
+              )
+
               {
                 tool_args: {
                   workspace_dir: workspace.dir,
                   env: workspace.env,
                 },
                 cached_prompt: I18n.t("#{name}.cached_prompts"),
-                prompt: I18n.t("#{name}.prompt", **record.attributes.symbolize_keys),
+                prompt: I18n.t("#{name}.prompt", **i18n_attributes.symbolize_keys),
                 tools: I18n.t("#{name}.tools"),
                 schema: -> {
                   next unless I18n.exists?("#{name}.response_schema")
@@ -71,6 +79,14 @@ module AgentC
                 }
               }
             else
+              i18n_attributes = (
+                if record.respond_to?(:i18n_attributes)
+                  record.i18n_attributes
+                else
+                  record.attributes
+                end
+              )
+
               {
                 tool_args: {
                   workspace_dir: workspace.dir,
@@ -78,7 +94,7 @@ module AgentC
                 }
               }.tap { |hash|
                 if params.key?(:prompt_key)
-                  hash[:prompt] = I18n.t(params[:prompt_key],  **record.attributes.symbolize_keys)
+                  hash[:prompt] = I18n.t(params[:prompt_key],  **i18n_attributes.symbolize_keys)
                 end
 
                 if params.key?(:cached_prompt_keys)

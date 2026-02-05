@@ -435,5 +435,137 @@ module AgentC
       assert_includes task.chat_ids, first_chat.id
       assert_includes task.chat_ids, second_chat.id
     end
+
+    def test_agent_step_with_i18n_attributes
+      store_class = Class.new(VersionedStore::Base) do
+        include AgentC::Store
+
+        record(:custom_record) do
+          schema do |t|
+            t.string(:attr_1)
+            t.string(:attr_2)
+            t.string(:attr_3)
+          end
+
+          has_many(
+            :tasks,
+            class_name: class_name(:task)
+          )
+
+          define_method(:i18n_attributes) do
+            { foo: "bar" }
+          end
+        end
+      end
+
+      store = store_class.new(dir: Dir.mktmpdir)
+      workspace = store.workspace.create!(
+        dir: "/tmp/example",
+        env: {}
+      )
+
+      pipeline_class = Class.new(Pipeline) do
+        agent_step(
+          :process_with_i18n,
+          prompt_key: "test.prompt",
+          cached_prompt_keys: ["test.cached_1", "test.cached_2"],
+          schema: -> { string("attr_3") }
+        )
+      end
+
+      record = store.custom_record.create!(attr_1: "value1", attr_2: "value2", attr_3: "initial")
+      task = store.task.create!(record:, workspace:)
+
+      I18n.backend.store_translations(:en, {
+        test: {
+          prompt: "Process with foo=%{foo}",
+          cached_1: "Cached instruction 1",
+          cached_2: "Cached instruction 2"
+        }
+      })
+
+      dummy_chat = DummyChat.new(responses: {
+        "Process with foo=bar" => '{"status": "success", "attr_3": "processed"}'
+      })
+
+      session = test_session(
+        workspace_dir: workspace.dir,
+        chat_provider: ->(**params) { dummy_chat }
+      )
+
+      pipeline_class.call(task:, session:)
+
+      assert task.reload.done?
+      assert_equal "processed", record.reload.attr_3
+      assert_equal ["process_with_i18n"], task.completed_steps
+    end
+
+    def test_agent_shorthand_i18n_with_i18n_attributes
+      store_class = Class.new(VersionedStore::Base) do
+        include AgentC::Store
+
+        record(:custom_record) do
+          schema do |t|
+            t.string(:attr_1)
+            t.string(:attr_2)
+            t.string(:attr_3)
+          end
+
+          has_many(
+            :tasks,
+            class_name: class_name(:task)
+          )
+
+          define_method(:i18n_attributes) do
+            { foo: "bar" }
+          end
+        end
+      end
+
+      store = store_class.new(dir: Dir.mktmpdir)
+      workspace = store.workspace.create!(
+        dir: "/tmp/example",
+        env: {}
+      )
+
+      pipeline_class = Class.new(Pipeline) do
+        agent_step(:process_with_i18n)
+      end
+
+      record = store.custom_record.create!(attr_1: "value1", attr_2: "value2", attr_3: "initial")
+      task = store.task.create!(record:, workspace:)
+
+      I18n.backend.store_translations(:en, {
+        process_with_i18n: {
+          tools: ["edit_file"],
+          cached_prompts: [
+            "Cached instruction 1",
+            "Cached instruction 2",
+          ],
+          prompt: "Process with foo=%{foo}",
+          response_schema: {
+            attr_3: {
+              type: "string",
+              description: "attr_3 description"
+            },
+          }
+        }
+      })
+
+      dummy_chat = DummyChat.new(responses: {
+        "Process with foo=bar" => '{"status": "success", "attr_3": "processed"}'
+      })
+
+      session = test_session(
+        workspace_dir: workspace.dir,
+        chat_provider: ->(**params) { dummy_chat }
+      )
+
+      pipeline_class.call(task:, session:)
+
+      assert task.reload.done?, task.error_message
+      assert_equal "processed", record.reload.attr_3
+      assert_equal ["process_with_i18n"], task.completed_steps
+    end
   end
 end

@@ -15,7 +15,6 @@
 
 - We do not use stubbing in our test. If you need to stub something (or monkey-patch it) to test it, that thing should be injectable.
 - Run tests with `bin/rake test` You can pass TESTOPTS to run a specific file.
-- Before committing, ensure that `bin/test_all` completes successfully.
 
 # Style
 

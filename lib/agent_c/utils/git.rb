@@ -31,7 +31,7 @@ module AgentC
       end
 
       def diff
-        shell.run!("cd #{repo_path} && git status --porcelain")
+        shell.run!("cd #{repo_path} && git diff")
       end
 
       def last_revision
