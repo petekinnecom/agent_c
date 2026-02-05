@@ -26,7 +26,7 @@ module AgentC
           Line 10
         CONTENT
 
-        @tool = ReadFile.new(working_dir: @test_dir)
+        @tool = ReadFile.new(workspace_dir: @test_dir)
 
         # Change to test directory so relative paths work
         @original_dir = Dir.pwd

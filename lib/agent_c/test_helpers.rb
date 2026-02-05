@@ -21,9 +21,18 @@ module AgentC
     # DummyChat that maps input_text => output_text for testing
     # Use this with Session.new() by passing it as a chat_provider or record parameter
     class DummyChat
-      attr_reader :id, :messages_history, :tools_received, :prompts_received
+      attr_reader :id, :messages_history, :tools_received, :prompts_received, :invocations
 
-      def initialize(responses: {}, prompts: [], tools: [], cached_prompts: [], working_dir: nil, record: nil, session: nil, **_options)
+      def initialize(
+        responses: {},
+        prompts: [],
+        tools: [],
+        cached_prompts: [],
+        workspace_dir: nil,
+        record: nil,
+        session: nil,
+        **_options
+      )
         @responses = responses
         @id = "test-chat-#{rand(1000)}"
         @messages_history = []
@@ -127,8 +136,8 @@ module AgentC
     class DummyGit
       attr_reader :invocations
 
-      def initialize(working_dir)
-        @working_dir = working_dir
+      def initialize(workspace_dir)
+        @workspace_dir = workspace_dir
         @invocations = []
       end
 

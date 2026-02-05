@@ -427,7 +427,7 @@ end
 
 ### DummyGit API
 
-- `initialize(working_dir)` - Create instance with working directory
+- `initialize(workspace_dir)` - Create instance with working directory
 - `uncommitted_changes?` - Returns false by default, true after `simulate_file_created!`
 - `simulate_file_created!` - Makes `uncommitted_changes?` return true
 - `invocations` - Array of all method calls with `{method:, args:, params:}` hashes

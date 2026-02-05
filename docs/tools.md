@@ -35,7 +35,7 @@ response = chat.ask("What files contain the User model?")
 result = session.prompt(
   prompt: "Summarize the README",
   tools: [:read_file],
-  tool_args: { working_dir: '/path/to/project' },
+  tool_args: { workspace_dir: '/path/to/project' },
   schema: -> { string(:summary) }
 )
 ```

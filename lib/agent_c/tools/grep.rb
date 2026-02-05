@@ -59,10 +59,10 @@ module AgentC
         )
       end
 
-      attr_reader :working_dir
-      def initialize(working_dir: nil, **)
-        raise ArgumentError, "working_dir is required" unless working_dir
-        @working_dir = working_dir
+      attr_reader :workspace_dir
+      def initialize(workspace_dir: nil, **)
+        raise ArgumentError, "workspace_dir is required" unless workspace_dir
+        @workspace_dir = workspace_dir
       end
 
       def execute(pattern:, file_pattern: nil, ignore_case: false, context_lines: 0, line_range_start: 1, line_range_end: nil, **params)
@@ -70,7 +70,7 @@ module AgentC
           return "The following params were passed but are not allowed: #{params.keys.join(",")}"
         end
 
-        Dir.chdir(working_dir) do
+        Dir.chdir(workspace_dir) do
 
           cmd = ["git", "grep", "-n", "--extended-regexp"]  # -n shows line numbers
 

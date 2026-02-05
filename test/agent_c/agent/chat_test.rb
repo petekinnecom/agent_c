@@ -184,7 +184,7 @@ module AgentC
         "Test" => "Response"
       })
 
-      custom_tools = [Tools::ReadFile.new(working_dir: "/tmp")]
+      custom_tools = [Tools::ReadFile.new(workspace_dir: "/tmp")]
       chat = @session.chat(record: record, tools: custom_tools)
 
       assert_equal 1, chat.tools.length
@@ -477,7 +477,7 @@ module AgentC
       end
 
       response = @session.prompt(
-        tool_args: { working_dir: "/tmp/workspace", env: { "FOO" => "bar" } },
+        tool_args: { workspace_dir: "/tmp/workspace", env: { "FOO" => "bar" } },
         tools: [:read_file, :edit_file],
         cached_prompt: ["You are a helpful assistant"],
         prompt: ["Find test path"],
@@ -507,7 +507,7 @@ module AgentC
       end
 
       response = @session.prompt(
-        tool_args: { working_dir: "/tmp/workspace" },
+        tool_args: { workspace_dir: "/tmp/workspace" },
         tools: [:read_file],
         cached_prompt: [],
         prompt: ["Find test path"],
@@ -535,7 +535,7 @@ module AgentC
       end
 
       response = @session.prompt(
-        tool_args: { working_dir: "/tmp" },
+        tool_args: { workspace_dir: "/tmp" },
         tools: [],
         cached_prompt: [],
         prompt: ["Do an impossible task"],
@@ -607,7 +607,7 @@ module AgentC
       end
 
       response = @session.prompt(
-        tool_args: { working_dir: "/tmp" },
+        tool_args: { workspace_dir: "/tmp" },
         tools: [],
         cached_prompt: [],
         prompt: ["First line", "Second line"],

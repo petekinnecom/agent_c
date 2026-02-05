@@ -11,13 +11,24 @@ module AgentC
     def initialize(
       tools: Tools.all,
       cached_prompts: [],
-      working_dir: nil,
+      workspace_dir: nil,
       record:, # Can be used for testing or continuing existing chats
       session: nil
     )
       @session = session
       @logger = session&.config&.logger
-      @tools = tools.map { _1.is_a?(Symbol) ? Tools.resolve(_1, working_dir: working_dir || session&.config&.workspace_dir) : _1 }
+      @tools = tools.map do
+        if _1.is_a?(Symbol)
+          Tools.resolve(
+            value: _1,
+            available_tools: Tools::NAMES.merge(session&.config&.extra_tools || {}),
+            args: {},
+            workspace_dir: workspace_dir || session&.config&.workspace_dir
+          )
+        else
+          _1
+        end
+      end
       @cached_prompts = cached_prompts
       @record_param = record
     end

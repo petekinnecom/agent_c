@@ -15,7 +15,7 @@ module AgentC
         @original_dir = Dir.pwd
         Dir.chdir(@test_dir)
 
-        @tool = EditFile.new(working_dir: @test_dir)
+        @tool = EditFile.new(workspace_dir: @test_dir)
       end
 
       def teardown

@@ -12,7 +12,8 @@ module AgentC
       :project,
       :run_id,
       :max_spend_project,
-      :max_spend_run
+      :max_spend_run,
+      :extra_tools,
     )
 
     attr_reader :logger
@@ -27,6 +28,7 @@ module AgentC
       max_spend_project: nil,
       max_spend_run: nil,
       ruby_llm: {},
+      extra_tools: {},
       chat_provider: ->(**params) { create_chat(**params) }
     )
       @agent_db_path = agent_db_path
@@ -38,6 +40,12 @@ module AgentC
       @max_spend_project = max_spend_project
       @max_spend_run = max_spend_run
       @ruby_llm = ruby_llm
+
+      unless extra_tools.is_a?(Hash)
+        raise ArgumentError, "extra_tools must be a hash mapping name to class or instance"
+      end
+      @extra_tools = extra_tools
+
       @chat_provider = chat_provider
 
       unless agent_db_path.match(/.sqlite3?$/)
@@ -51,15 +59,15 @@ module AgentC
     end
 
     def chat(
-      tools: Tools.all,
+      tools: Tools::NAMES.keys,
       cached_prompts: [],
-      working_dir: nil,
+      workspace_dir: nil,
       record: nil
     )
       @chat_provider.call(
         tools: tools,
         cached_prompts: cached_prompts,
-        working_dir: working_dir || config.workspace_dir,
+        workspace_dir: workspace_dir || config.workspace_dir,
         record: record,
         session: self
       )
@@ -67,20 +75,30 @@ module AgentC
 
     def prompt(
       tool_args: {},
-      tools: Tools::NAMES.keys,
+      tools: Tools::NAMES.keys + config.extra_tools.keys,
       cached_prompt: [],
       prompt:,
       schema:,
       on_chat_created: ->(*) {}
     )
-      working_dir = tool_args[:working_dir] || config.workspace_dir
-      # Merge working_dir into tool_args for Tools.resolve
-      resolved_tool_args = tool_args.merge(working_dir: working_dir)
+      workspace_dir = tool_args[:workspace_dir] || config.workspace_dir
+
+      resolved_tools = (
+        tools
+          .map { |value|
+            Tools.resolve(
+              value:,
+              available_tools: Tools::NAMES.merge(config.extra_tools),
+              args: tool_args,
+              workspace_dir: config.workspace_dir
+            )
+          }
+      )
 
       chat_instance = chat(
-        tools: tools.map { Tools.resolve(_1, **resolved_tool_args) },
+        tools: resolved_tools,
         cached_prompts: cached_prompt,
-        working_dir: working_dir
+        workspace_dir: workspace_dir
       )
       on_chat_created.call(chat_instance.id)
 
@@ -114,6 +132,7 @@ module AgentC
         run_id: @run_id,
         max_spend_project: @max_spend_project,
         max_spend_run: @max_spend_run,
+        extra_tools: @extra_tools,
       )
     end
 

@@ -171,6 +171,30 @@ Available RubyLLM options:
 - `bedrock_region` - AWS region (e.g., 'us-west-2')
 - `default_model` - Model ID to use
 
+### extra_tools
+
+A hash mapping tool names (symbols) to custom tool classes or instances. This allows you to add custom tools beyond the built-in AgentC tools.
+
+```ruby
+session = Session.new(
+  extra_tools: {
+    my_tool: MyCustomTool,           # Class will be initialized
+    another_tool: MyOtherTool.new    # Instance used directly
+  }
+)
+```
+
+When a tool class is provided, AgentC will instantiate it with `workspace_dir:` and `env:` keyword arguments:
+
+```ruby
+# AgentC will call:
+# MyCustomTool.new(workspace_dir: session.workspace_dir, env: session.env)
+```
+
+When a tool instance is provided, it will be used as-is without initialization.
+
+Custom tools must implement the tool interface expected by RubyLLM. See the [Custom Tools documentation](custom-tools.md) for details on implementing custom tools.
+
 ## Complete Example
 
 ```ruby
@@ -201,6 +225,12 @@ session = Session.new(
     bedrock_secret_key: ENV['AWS_SECRET_ACCESS_KEY'],
     bedrock_region: 'us-west-2',
     default_model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+  },
+
+  # Custom tools (optional)
+  extra_tools: {
+    custom_search: MySearchTool,
+    api_client: MyApiClient.new(api_key: ENV['API_KEY'])
   }
 )
 

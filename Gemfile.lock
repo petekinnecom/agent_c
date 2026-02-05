@@ -2,12 +2,12 @@ PATH
   remote: .
   specs:
     agent_c (2.71828)
-      activerecord
-      async
-      json-schema
-      ruby_llm
-      sqlite3
-      zeitwerk
+      activerecord (~> 8.1)
+      async (~> 2.35)
+      json-schema (~> 6.1)
+      ruby_llm (~> 1.9)
+      sqlite3 (~> 2.9)
+      zeitwerk (~> 2.7)
 
 GEM
   remote: https://rubygems.org/

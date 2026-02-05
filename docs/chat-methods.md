@@ -13,7 +13,7 @@ session = Session.new(...)
 chat = session.chat(
   tools: [:read_file, :edit_file],
   cached_prompts: ["You are a helpful assistant"],
-  working_dir: Dir.pwd
+  workspace_dir: Dir.pwd
 )
 ```
 
@@ -126,7 +126,7 @@ result = session.prompt(
   prompt: "Read the README file and summarize it",
   schema: -> { string(:summary) },
   tools: [:read_file],
-  tool_args: { working_dir: '/path/to/project' },
+  tool_args: { workspace_dir: '/path/to/project' },
   cached_prompt: ["You are a helpful documentation assistant"]
 )
 

@@ -29,15 +29,15 @@ module AgentC
         )
       end
 
-      attr_reader :working_dir, :env
+      attr_reader :workspace_dir, :env
       def initialize(
-        working_dir: nil,
+        workspace_dir: nil,
         env: {},
         **
       )
-        raise ArgumentError, "working_dir is required" unless working_dir
+        raise ArgumentError, "workspace_dir is required" unless workspace_dir
         @env = env
-        @working_dir = working_dir
+        @workspace_dir = workspace_dir
       end
 
       def execute(path:, test_method_name: nil, disable_spring: false, **params)
@@ -49,18 +49,18 @@ module AgentC
           return "The following params were passed but are not allowed: #{params.keys.join(",")}"
         end
 
-        unless Paths.allowed?(working_dir, path)
-          return "Path: #{path} not acceptable. Must be a child of directory: #{working_dir}."
+        unless Paths.allowed?(workspace_dir, path)
+          return "Path: #{path} not acceptable. Must be a child of directory: #{workspace_dir}."
         end
 
-        workspace_path = Paths.relative_to_dir(working_dir, path)
+        workspace_path = Paths.relative_to_dir(workspace_dir, path)
 
         env_string = env.is_a?(Hash) ? env.map { |k, v| "#{k}=#{Shellwords.escape(v)}"}.join(" ") : env
 
         env_string += " DISABLE_SPRING=1" if disable_spring
 
         cmd = <<~TXT.chomp
-          cd #{working_dir} && \
+          cd #{workspace_dir} && \
           #{env_string} bundle exec rails test #{path} #{test_method_name && "--name='#{test_method_name}'"}
         TXT
 

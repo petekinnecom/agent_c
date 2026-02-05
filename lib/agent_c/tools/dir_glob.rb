@@ -12,10 +12,10 @@ module AgentC
         )
       end
 
-      attr_reader :working_dir
-      def initialize(working_dir: nil, **)
-        raise ArgumentError, "working_dir is required" unless working_dir
-        @working_dir = working_dir
+      attr_reader :workspace_dir
+      def initialize(workspace_dir: nil, **)
+        raise ArgumentError, "workspace_dir is required" unless workspace_dir
+        @workspace_dir = workspace_dir
       end
 
       def execute(glob_pattern:, **params)
@@ -23,14 +23,14 @@ module AgentC
           return "The following params were passed but are not allowed: #{params.keys.join(",")}"
         end
 
-        unless Paths.allowed?(working_dir, glob_pattern)
-          return "Path: #{glob_pattern} not acceptable. Must be a child of directory: #{working_dir}."
+        unless Paths.allowed?(workspace_dir, glob_pattern)
+          return "Path: #{glob_pattern} not acceptable. Must be a child of directory: #{workspace_dir}."
         end
 
         results = (
           Dir
-            .glob(File.join(working_dir, glob_pattern))
-            .select { Paths.allowed?(working_dir, _1) }
+            .glob(File.join(workspace_dir, glob_pattern))
+            .select { Paths.allowed?(workspace_dir, _1) }
         )
 
         warning = (

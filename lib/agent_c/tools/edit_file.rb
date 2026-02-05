@@ -37,10 +37,10 @@ module AgentC
         )
       end
 
-      attr_reader :working_dir
-      def initialize(working_dir: nil, **)
-        raise ArgumentError, "working_dir is required" unless working_dir
-        @working_dir = working_dir
+      attr_reader :workspace_dir
+      def initialize(workspace_dir: nil, **)
+        raise ArgumentError, "workspace_dir is required" unless workspace_dir
+        @workspace_dir = workspace_dir
       end
 
       def execute(path:, mode:, content:, start_line: nil, end_line: nil, **params)
@@ -48,11 +48,11 @@ module AgentC
           return "The following params were passed but are not allowed: #{params.keys.join(",")}"
         end
 
-        unless Paths.allowed?(working_dir, path)
-          return "Path: #{path} not acceptable. Must be a child of directory: #{working_dir}."
+        unless Paths.allowed?(workspace_dir, path)
+          return "Path: #{path} not acceptable. Must be a child of directory: #{workspace_dir}."
         end
 
-        workspace_path = Paths.relative_to_dir(working_dir, path)
+        workspace_path = Paths.relative_to_dir(workspace_dir, path)
 
         case mode
         when "overwrite"

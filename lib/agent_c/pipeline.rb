@@ -44,7 +44,7 @@ module AgentC
             elsif params.empty?
               {
                 tool_args: {
-                  working_dir: workspace.dir,
+                  workspace_dir: workspace.dir,
                   env: workspace.env,
                 },
                 cached_prompt: I18n.t("#{name}.cached_prompts"),
@@ -73,7 +73,7 @@ module AgentC
             else
               {
                 tool_args: {
-                  working_dir: workspace.dir,
+                  workspace_dir: workspace.dir,
                   env: workspace.env,
                 }
               }.tap { |hash|
