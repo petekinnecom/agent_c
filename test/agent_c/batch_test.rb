@@ -128,7 +128,7 @@ module AgentC
 
     def test_accessors
       assert_equal @store, @batch.store
-      assert_equal @workspace, @batch.workspace
+      assert_equal [@workspace], @batch.workspaces
       assert_equal @session, @batch.session
     end
 

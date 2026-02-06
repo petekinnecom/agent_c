@@ -65,8 +65,8 @@ module AgentC
       context.store
     end
 
-    def workspace
-      context.workspace
+    def workspaces
+      context.workspaces
     end
 
     def session
