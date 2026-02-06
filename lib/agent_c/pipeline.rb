@@ -123,17 +123,16 @@ module AgentC
 
       log("start")
 
-      self.class.steps.each do |step|
+      while(task.pending?)
         break if task.failed?
 
+        step = self.class.steps.find { !task.completed_steps.include?(_1.name.to_s) }
+        break if step.nil?
+
+        @rewind_to = nil
 
         store.transaction do
           log_prefix = "step: '#{step.name}'"
-
-          if task.completed_steps.include?(step.name.to_s)
-            log("#{log_prefix} already completed, skipping")
-            next
-          end
 
           log("#{log_prefix} start")
 
@@ -142,6 +141,31 @@ module AgentC
           if task.failed?
             log("#{log_prefix} failed, executing on_failures")
             self.class.on_failures.each { instance_exec(&_1)}
+          elsif @rewind_to
+            matching_steps = task.completed_steps.select { _1 == @rewind_to }
+
+            if matching_steps.count == 0
+              raise ArgumentError, <<~TXT
+                Cannot rewind to a step that's not been completed yet:
+
+                rewind_to!(#{@rewind_to.inspect})
+                completed_steps: #{task.completed_steps.inspect}
+              TXT
+            elsif matching_steps.count > 1
+              raise ArgumentError, <<~TXT
+                Cannot rewind to a step with a non-distinct name. The step
+                name appears multiple times:
+
+                rewind_to!(#{@rewind_to.inspect})
+                completed_steps: #{task.completed_steps.inspect}
+              TXT
+            end
+
+            log("#{log_prefix} rewind_to! #{@rewind_to.inspect}")
+            task
+              .completed_steps
+              .index(@rewind_to)
+              .then { task.update!(completed_steps: task.completed_steps[0..._1]) }
           else
             log("#{log_prefix} done")
             task.completed_steps << step.name.to_s
@@ -171,6 +195,10 @@ module AgentC
 
     def store
       task.store
+    end
+
+    def rewind_to!(step)
+      @rewind_to = step.to_s
     end
 
     def repo
