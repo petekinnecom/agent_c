@@ -42,7 +42,7 @@ module AgentC
           else
             logger.info("creating/resetting worktree at: #{worktree_dir}")
             git.create_worktree(
-              dir: worktree_dir,
+              worktree_dir: worktree_dir,
               branch: spec.fetch(:branch),
               revision: initial_revision,
             )

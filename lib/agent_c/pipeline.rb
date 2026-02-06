@@ -201,8 +201,8 @@ module AgentC
       @rewind_to = step.to_s
     end
 
-    def repo
-      @repo ||= @git.call(workspace.dir)
+    def git
+      @_git ||= @git.call(workspace.dir)
     end
 
     def log(msg)
