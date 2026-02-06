@@ -14,7 +14,7 @@ module AgentC
         string(
           :mode,
           description: "Operation mode: 'overwrite' (replace entire file), 'replace_lines' (replace line range), 'insert_at_line' (insert before specified line), 'append' (add to end)",
-          enum: ["overwrite", "replace_lines", "insert_at_line", "append"],
+          enum: ["overwrite", "replace_lines", "insert_at_line", "append", "delete"],
           required: true
         )
         string(
@@ -55,6 +55,8 @@ module AgentC
         workspace_path = Paths.relative_to_dir(workspace_dir, path)
 
         case mode
+        when "delete"
+          FileUtils.rm_f(path)
         when "overwrite"
           FileUtils.mkdir_p(File.dirname(workspace_path))
           File.write(workspace_path, content)
