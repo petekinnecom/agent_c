@@ -37,6 +37,8 @@ module AgentC
       end
 
       def agent_step(name, **params, &block)
+        raise ArgumentError.new("Can't pass block and params") if params.any? && block
+
         step(name) do
           resolved_params = (
             if block
