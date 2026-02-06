@@ -9,6 +9,7 @@ module AgentC
       file_metadata: FileMetadata,
       dir_glob: DirGlob,
       run_rails_test: RunRailsTest,
+      git_status: GitStatus
     }
 
     def self.all(**params)
