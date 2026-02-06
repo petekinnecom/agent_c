@@ -11,7 +11,7 @@ module AgentC
         chat_provider: ->(**params) {
           DummyChat.new(
             responses: {
-              "What is 2+2?" => '{"status": "success", "answer": "4"}'
+              "What is 2+2?" => '{"answer": "4"}'
             },
             **params
           )
@@ -32,7 +32,7 @@ module AgentC
         chat_provider: ->(**params) {
           DummyChat.new(
             responses: {
-              "What is impossible?" => '{"status": "error", "message": "Cannot compute"}'
+              "What is impossible?" => '{"unable_to_fulfill_request_error": "Cannot compute"}'
             },
             **params
           )
@@ -53,7 +53,7 @@ module AgentC
         chat_provider: ->(**params) {
           DummyChat.new(
             responses: {
-              /extract.*email/ => '{"status": "success", "email": "test@example.com"}'
+              /extract.*email/ => '{"email": "test@example.com"}'
             },
             **params
           )
@@ -74,7 +74,7 @@ module AgentC
         chat_provider: ->(**params) {
           DummyChat.new(
             responses: {
-              ->(text) { text.include?("hello") } => '{"status": "success", "greeting": "Hi there!"}'
+              ->(text) { text.include?("hello") } => '{"greeting": "Hi there!"}'
             },
             **params
           )
@@ -95,7 +95,7 @@ module AgentC
         chat_provider: ->(**params) {
           DummyChat.new(
             responses: {
-              "specific question" => '{"status": "success", "answer": "yes"}'
+              "specific question" => '{"answer": "yes"}'
             },
             **params
           )
@@ -138,13 +138,12 @@ module AgentC
     def test_dummy_chat_get_method
       session = test_session
       dummy_chat = DummyChat.new(responses: {
-        /Get data/ => '{"status": "success", "value": "test"}'
+        /Get data/ => '{"value": "test"}'
       })
 
       chat = session.chat(tools: [], record: dummy_chat)
       result = chat.get("Get data", schema: nil)
 
-      assert_equal "success", result["status"]
       assert_equal "test", result["value"]
     end
 
@@ -153,7 +152,7 @@ module AgentC
         chat_provider: ->(**params) {
           DummyChat.new(
             responses: {
-              "Line 1\nLine 2" => '{"status": "success", "result": "combined"}'
+              "Line 1\nLine 2" => '{"result": "combined"}'
             },
             **params
           )
@@ -180,7 +179,7 @@ module AgentC
             responses: {
               "Write hello to file" => -> {
                 File.write(temp_file, "Hello from DummyChat!")
-                '{"status": "success", "message": "File written"}'
+                '{"message": "File written"}'
               }
             },
             **params

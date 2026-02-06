@@ -218,7 +218,7 @@ module AgentC
       task = @store.task.create!(record:, workspace: @workspace)
 
       dummy_chat = DummyChat.new(responses: {
-        "Do something" => '{"status": "success", "attr_1": "from_agent"}'
+        "Do something" => '{"attr_1": "from_agent"}'
       })
 
       session = test_session(
@@ -246,7 +246,7 @@ module AgentC
       task = @store.task.create!(record:, workspace: @workspace)
 
       dummy_chat = DummyChat.new(responses: {
-        "Do something" => '{"status": "error", "message": "Agent failed"}'
+        "Do something" => '{"unable_to_fulfill_request_error": "Agent failed"}'
       })
 
       session = test_session(
@@ -336,7 +336,7 @@ module AgentC
       })
 
       dummy_chat = DummyChat.new(responses: {
-        "Process with attr_1=value1 and attr_2=value2" => '{"status": "success", "attr_3": "processed"}'
+        "Process with attr_1=value1 and attr_2=value2" => '{"attr_3": "processed"}'
       })
 
       session = test_session(
@@ -378,7 +378,7 @@ module AgentC
       })
 
       dummy_chat = DummyChat.new(responses: {
-        "Process with attr_1=value1 and attr_2=value2" => '{"status": "success", "attr_3": "processed"}'
+        "Process with attr_1=value1 and attr_2=value2" => '{"attr_3": "processed"}'
       })
 
       session = test_session(
@@ -412,11 +412,11 @@ module AgentC
       task = @store.task.create!(record:, workspace: @workspace)
 
       first_chat = DummyChat.new(responses: {
-        "First prompt" => '{"status": "success", "attr_1": "first"}'
+        "First prompt" => '{"attr_1": "first"}'
       })
 
       second_chat = DummyChat.new(responses: {
-        "Second prompt" => '{"status": "success", "attr_2": "second"}'
+        "Second prompt" => '{"attr_2": "second"}'
       })
 
       call_count = 0
@@ -485,7 +485,7 @@ module AgentC
       })
 
       dummy_chat = DummyChat.new(responses: {
-        "Process with foo=bar" => '{"status": "success", "attr_3": "processed"}'
+        "Process with foo=bar" => '{"attr_3": "processed"}'
       })
 
       session = test_session(
@@ -553,7 +553,7 @@ module AgentC
       })
 
       dummy_chat = DummyChat.new(responses: {
-        "Process with foo=bar" => '{"status": "success", "attr_3": "processed"}'
+        "Process with foo=bar" => '{"attr_3": "processed"}'
       })
 
       session = test_session(

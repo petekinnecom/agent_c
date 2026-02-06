@@ -115,8 +115,7 @@ module AgentC
         Agent::ChatResponse.new(
           chat_id: chat_instance.id,
           raw_response: {
-            "status" => "error",
-            "message" => ["#{e.class.name}:#{e.message}", e.backtrace].join("\n")
+            "unable_to_fulfill_request_error" => ["#{e.class.name}:#{e.message}", e.backtrace].join("\n")
           },
         )
       end

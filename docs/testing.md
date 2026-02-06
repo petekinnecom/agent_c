@@ -98,9 +98,9 @@ def test_agent_step_inline
   # Match the LITERAL prompt strings with %{placeholders}, not interpolated values
   dummy_chat = DummyChat.new(responses: {
     "Summarize the document titled %{title}" =>
-      '{"status": "success", "summary": "A comprehensive report"}',
+      '{" "summary": "A comprehensive report"}',
     "Categorize this document: %{summary}" =>
-      '{"status": "success", "category": "Research"}'
+      '{" "category": "Research"}'
   })
 
   session = test_session(
@@ -133,8 +133,8 @@ def test_i18n_agent_step
   # I18n interpolates BEFORE sending to DummyChat
   # DummyChat receives: "Process file report.pdf" (interpolated!)
   dummy_chat = DummyChat.new(responses: {
-    "Process file report.pdf" => '{"status": "success"}',  # ✓ Correct
-    "Process file %{file_name}" => '{"status": "success"}' # ✗ Wrong - won't match
+    "Process file report.pdf" => '{}',  # ✓ Correct
+    "Process file %{file_name}" => '{}' # ✗ Wrong - won't match
   })
 
   session = test_session(
@@ -185,7 +185,7 @@ def test_agent_step_with_i18n
   # Configure DummyChat with matching response
   dummy_chat = DummyChat.new(responses: {
     "Summarize the document titled 'My Document' in category 'Technical'" =>
-      '{"status": "success", "summary": "This is a technical document about programming."}'
+      '{" "summary": "This is a technical document about programming."}'
   })
 
   # Create session with DummyChat
@@ -231,7 +231,7 @@ def test_agent_step_with_regex_matching
 
   # Use regex to match prompts flexibly
   dummy_chat = DummyChat.new(responses: {
-    /Process document:/ => '{"status": "success", "category": "Processed"}'
+    /Process document:/ => '{" "category": "Processed"}'
   })
 
   session = test_session(
@@ -270,7 +270,7 @@ def test_agent_step_failure
   })
 
   dummy_chat = DummyChat.new(responses: {
-    "This will fail" => '{"status": "error", "message": "Processing failed"}'
+    "This will fail" => '{"unable_to_fulfill_request_error": "Processing failed"}'
   })
 
   session = test_session(
@@ -332,11 +332,11 @@ def test_multi_step_pipeline
   # Configure responses for each step
   dummy_chat = DummyChat.new(responses: {
     "Extract title" =>
-      '{"status": "success", "title": "Research Paper"}',
+      '{" "title": "Research Paper"}',
     "Summarize document: Research Paper" =>
-      '{"status": "success", "summary": "A study on testing"}',
+      '{" "summary": "A study on testing"}',
     /Categorize: Research Paper - A study on testing/ =>
-      '{"status": "success", "category": "Research"}'
+      '{" "category": "Research"}'
   })
 
   session = test_session(
@@ -444,7 +444,7 @@ session = Session.new(
   chat_provider: ->(**params) {
     DummyChat.new(
       responses: {
-        "What is 2+2?" => '{"status": "success", "answer": "4"}'
+        "What is 2+2?" => '{" "answer": "4"}'
       },
       **params
     )
@@ -493,7 +493,7 @@ session = Session.new(
   chat_provider: ->(**params) {
     DummyChat.new(
       responses: {
-        "What is Ruby?" => '{"status": "success", "answer": "A programming language"}'
+        "What is Ruby?" => '{" "answer": "A programming language"}'
       },
       **params
     )
@@ -508,7 +508,7 @@ session = Session.new(
   chat_provider: ->(**params) {
     DummyChat.new(
       responses: {
-        /extract.*email/ => '{"status": "success", "email": "user@example.com"}'
+        /extract.*email/ => '{" "email": "user@example.com"}'
       },
       **params
     )
@@ -529,7 +529,7 @@ session = Session.new(
   chat_provider: ->(**params) {
     DummyChat.new(
       responses: {
-        ->(text) { text.include?("hello") } => '{"status": "success", "greeting": "Hi!"}'
+        ->(text) { text.include?("hello") } => '{" "greeting": "Hi!"}'
       },
       **params
     )
@@ -559,7 +559,7 @@ session = Session.new(
       responses: {
         "Write file" => -> {
           File.write("/tmp/test.txt", "content")
-          '{"status": "success", "path": "/tmp/test.txt"}'
+          '{" "path": "/tmp/test.txt"}'
         }
       },
       **params
@@ -607,7 +607,7 @@ session = Session.new(
   chat_provider: ->(**params) {
     DummyChat.new(
       responses: {
-        "Process data" => '{"status": "success", "result": "processed"}'
+        "Process data" => '{" "result": "processed"}'
       },
       **params
     )
@@ -630,7 +630,7 @@ session = Session.new(
   chat_provider: ->(**params) {
     DummyChat.new(
       responses: {
-        "Impossible task" => '{"status": "error", "message": "Cannot complete"}'
+        "Impossible task" => '{"unable_to_fulfill_request_error": "Cannot complete"}'
       },
       **params
     )
@@ -659,7 +659,7 @@ class MyFeatureTest < Minitest::Test
       chat_provider: ->(**params) {
         DummyChat.new(
           responses: {
-            /extract.*email/ => '{"status": "success", "email": "john@example.com"}'
+            /extract.*email/ => '{" "email": "john@example.com"}'
           },
           **params
         )
@@ -680,7 +680,7 @@ class MyFeatureTest < Minitest::Test
       chat_provider: ->(**params) {
         DummyChat.new(
           responses: {
-            "Invalid input" => '{"status": "error", "message": "Input validation failed"}'
+            "Invalid input" => '{"unable_to_fulfill_request_error": "Input validation failed"}'
           },
           **params
         )

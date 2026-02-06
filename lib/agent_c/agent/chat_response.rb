@@ -11,21 +11,27 @@ module AgentC
     end
 
     def success?
-      status == "success"
+      !@raw_response.key?("unable_to_fulfill_request_error")
     end
 
     def status
-      @raw_response.fetch("status")
+      if success?
+        "success"
+      else
+        "error"
+      end
     end
 
     def data
       raise "Cannot call data on failed response. Use error_message instead." unless success?
-      raw_response.reject { |k, _| k == "status" }
+
+      raw_response
     end
 
     def error_message
       raise "Cannot call error_message on successful response. Use data instead." if success?
-      raw_response.fetch("message")
+
+      raw_response.fetch("unable_to_fulfill_request_error")
     end
     end
   end

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    agent_c (2.71828)
+    agent_c (2.718281)
       activerecord (~> 8.1)
       async (~> 2.35)
       json-schema (~> 6.1)

@@ -85,7 +85,7 @@ module AgentC
 
     def test_get_with_valid_json_schema
       record = DummyChat.new(responses: {
-        ->(text) { text.include?("Get person data") } => '{"status": "success", "name": "Alice", "age": 30}'
+        ->(text) { text.include?("Get person data") } => '{"name": "Alice", "age": 30}'
       })
 
       chat = @session.chat(record: record, tools: [])
@@ -109,7 +109,7 @@ module AgentC
       # Override ask to return different answers
       record.define_singleton_method(:ask) do |input_text|
         call_count += 1
-        answer = call_count == 1 ? '{"status": "success", "value": "A"}' : '{"status": "success", "value": "A"}'
+        answer = call_count == 1 ? '{"value": "A"}' : '{"value": "A"}'
 
         response_message = OpenStruct.new(
           role: :assistant,
@@ -140,7 +140,7 @@ module AgentC
       # Override ask to track refinement
       record.define_singleton_method(:ask) do |input_text|
         call_count += 1
-        answer = '{"status": "success", "result": "refined answer"}'
+        answer = '{"result": "refined answer"}'
 
         response_message = OpenStruct.new(
           role: :assistant,
@@ -210,7 +210,7 @@ module AgentC
       record.define_singleton_method(:ask) do |input_text|
         call_count += 1
         # First call returns invalid JSON, second returns valid
-        answer = call_count == 1 ? 'invalid json' : '{"status": "success", "data": "valid"}'
+        answer = call_count == 1 ? 'invalid json' : '{"data": "valid"}'
 
         response_message = OpenStruct.new(
           role: :assistant,
@@ -242,7 +242,7 @@ module AgentC
       record.define_singleton_method(:ask) do |input_text|
         call_count += 1
         # First call returns JSON that doesn't match schema, second returns valid
-        answer = call_count == 1 ? '{"status": "success"}' : '{"status": "success", "data": "valid"}'
+        answer = call_count == 1 ? '{}' : '{"data": "valid"}'
 
         response_message = OpenStruct.new(
           role: :assistant,
@@ -269,7 +269,7 @@ module AgentC
     def test_get_with_error_response
       # Test error response from schema
       record = DummyChat.new(responses: {
-        ->(text) { text.include?("impossible task") } => '{"status": "error", "message": "Cannot complete this task"}'
+        ->(text) { text.include?("impossible task") } => '{"unable_to_fulfill_request_error": "Cannot complete this task"}'
       })
 
       chat = @session.chat(record: record, tools: [])
@@ -280,8 +280,7 @@ module AgentC
 
       result = chat.get("Do an impossible task", schema: schema)
 
-      assert_equal "error", result["status"]
-      assert_equal "Cannot complete this task", result["message"]
+      assert_equal "Cannot complete this task", result["unable_to_fulfill_request_error"]
     end
 
     def test_refine_with_second_refinement_different
@@ -297,13 +296,13 @@ module AgentC
         if call_count == 2
           expected_prompt = I18n.t(
             "agent.chat.refine.system_message",
-            prior_answer: '{"status": "success", "result": "first answer"}',
+            prior_answer: '{"result": "first answer"}',
             original_message: "Give me an answer"
           )
           prior_answer_found = input_text.include?("BEGIN-PRIOR-ANSWER") && input_text.include?("first answer")
         end
 
-        answer = call_count == 1 ? '{"status": "success", "result": "first answer"}' : '{"status": "success", "result": "refined answer"}'
+        answer = call_count == 1 ? '{"result": "first answer"}' : '{"result": "refined answer"}'
 
         response_message = OpenStruct.new(
           role: :assistant,
@@ -336,7 +335,7 @@ module AgentC
       record.define_singleton_method(:ask) do |input_text|
         call_count += 1
         # Each call returns a different answer
-        answer = '{"status": "success", "value": "' + "answer#{call_count}" + '"}'
+        answer = '{"value": "' + "answer#{call_count}" + '"}'
 
         response_message = OpenStruct.new(
           role: :assistant,
@@ -445,7 +444,7 @@ module AgentC
     def test_normalize_schema_with_any_one_of
       # Test that AnyOneOf schema from Schema.result works correctly
       record = DummyChat.new(responses: {
-        ->(text) { text.include?("Get data") } => '{"status": "success", "value": "test"}'
+        ->(text) { text.include?("Get data") } => '{"value": "test"}'
       })
 
       chat = @session.chat(record: record, tools: [])
@@ -468,7 +467,7 @@ module AgentC
       }
 
       record = TestHelpers::DummyChat.new(responses: {
-        ->(text) { text.include?("Find test path") } => '{"status": "success", "confirmation_test_path": "/path/to/test.rb"}'
+        ->(text) { text.include?("Find test path") } => '{"confirmation_test_path": "/path/to/test.rb"}'
       })
 
       # Monkey-patch session to use DummyChat
@@ -526,7 +525,7 @@ module AgentC
       }
 
       record = TestHelpers::DummyChat.new(responses: {
-        ->(text) { text.include?("impossible task") } => '{"status": "error", "message": "I cannot complete this task"}'
+        ->(text) { text.include?("impossible task") } => '{"unable_to_fulfill_request_error": "I cannot complete this task"}'
       })
 
       # Monkey-patch session to use DummyChat
@@ -551,7 +550,7 @@ module AgentC
     def test_prompt_data_raises_on_error_response
       response = Agent::ChatResponse.new(
         chat_id: "test-123",
-        raw_response: {"status" => "error", "message" => "Something went wrong"}
+        raw_response: {"unable_to_fulfill_request_error" => "Something went wrong"}
       )
 
       refute response.success?
@@ -567,7 +566,7 @@ module AgentC
     def test_prompt_error_message_raises_on_success_response
       response = Agent::ChatResponse.new(
         chat_id: "test-123",
-        raw_response: {"confirmation_test_path" => "/path/to/test.rb", "status" => "success"}
+        raw_response: {"confirmation_test_path" => "/path/to/test.rb"}
       )
 
       assert response.success?
@@ -591,8 +590,8 @@ module AgentC
         if input_text.include?("First line\nSecond line")
           response_message = OpenStruct.new(
             role: :assistant,
-            content: '{"status": "success", "result": "success"}',
-            to_llm: OpenStruct.new(to_h: { role: :assistant, content: '{"status": "success", "result": "success"}' })
+            content: '{"result": "success"}',
+            to_llm: OpenStruct.new(to_h: { role: :assistant, content: '{"result": "success"}' })
           )
           @messages_history << response_message
           response_message

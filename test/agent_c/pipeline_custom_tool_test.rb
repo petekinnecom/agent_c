@@ -55,7 +55,7 @@ module AgentC
       end
 
       responses = {
-        "hello" => '{"status": "success"}'
+        "hello" => '{}'
       }
 
       tool_instance = custom_tool_auto_initialized.new(

@@ -43,15 +43,14 @@ answer = chat.get("What is 2 + 2?")
 # give a reason why.
 #
 # The response will look like one of the following:
+# Success response (just the data fields):
 # {
-#   status: "success",
 #   name: "...",
 #   email: "...",
 # }
-# OR:
+# OR error response:
 # {
-#   status: "failure",
-#   message: "some reason why it couldn't do it"
+#   unable_to_fulfill_request_error: "some reason why it couldn't do it"
 # }
 
 schema = AgentC::Schema.result do
@@ -63,10 +62,10 @@ result = chat.get(
   "Extract the name and email from this text: 'Contact John at john@example.com'",
   schema: schema
 )
-# => { "status" => "success", "name" => "John", "email" => "john@example.com" }
+# => { "name" => "John", "email" => "john@example.com" }
 
 # If the LLM can't complete the task, it returns an error response:
-# => { "status" => "error", "message" => "No email found in the text" }
+# => { "unable_to_fulfill_request_error" => "No email found in the text" }
 ```
 
 ### Using confirm and out_of for consensus

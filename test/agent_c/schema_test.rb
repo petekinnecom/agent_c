@@ -13,12 +13,12 @@ module AgentC
 
       json_schema = test_schema&.to_json_schema&.fetch(:schema)
 
-      # Test successful case
-      result = { status: "success", data: "test data" }
+      # Test successful case - just the data fields, no status
+      result = { data: "test data" }
       assert JSON::Validator.validate(json_schema, result)
 
-      # Verify status field is required
-      invalid_result = { data: "test data" }
+      # Verify data field is required
+      invalid_result = {}
       refute JSON::Validator.validate(json_schema, invalid_result)
     end
 
@@ -30,12 +30,11 @@ module AgentC
 
       json_schema = test_schema&.to_json_schema&.fetch(:schema)
 
-
-          # Test error case
-      result = { status: "error", message: "Something went wrong" }
+      # Test error case
+      result = { unable_to_fulfill_request_error: "Something went wrong" }
       assert JSON::Validator.validate(json_schema, result)
-      # Verify message field is required for error status
-      invalid_result = { status: "error" }
+      # Verify unable_to_fulfill_request_error field is required for error
+      invalid_result = {}
       refute JSON::Validator.validate(json_schema, invalid_result)
     end
 
@@ -49,9 +48,8 @@ module AgentC
 
       json_schema = test_schema&.to_json_schema&.fetch(:schema)
 
-      # Test with all fields present
+      # Test with all fields present - no status field
       result = {
-        status: "success",
         name: "John",
         age: 30,
         hobbies: ["reading", "coding"]
@@ -59,15 +57,15 @@ module AgentC
       assert JSON::Validator.validate(json_schema, result)
     end
 
-    def test_result_invalid_status
+    def test_result_invalid_mixed_response
       test_schema = Schema.result do
         string(:data, description: "The result data")
       end
 
       json_schema = test_schema&.to_json_schema&.fetch(:schema)
 
-      # Test with invalid status value
-      result = { status: "pending", data: "test" }
+      # Test with both success and error fields (invalid)
+      result = { data: "test", unable_to_fulfill_request_error: "error" }
       refute JSON::Validator.validate(json_schema, result)
     end
 
@@ -91,11 +89,10 @@ module AgentC
       success_hash_schema = {
         type: "object",
         properties: {
-          status: { type: "string", enum: ["success"] },
           result: { type: "string" },
           count: { type: "integer" }
         },
-        required: ["status", "result"]
+        required: ["result"]
       }
 
       test_schema = Schema.result(schema: success_hash_schema)
@@ -103,11 +100,11 @@ module AgentC
       json_schema = test_schema&.to_json_schema&.fetch(:schema)
 
       # Test successful case with Hash schema
-      result = { status: "success", result: "completed", count: 42 }
+      result = { result: "completed", count: 42 }
       assert JSON::Validator.validate(json_schema, result)
 
       # Verify required fields
-      invalid_result = { status: "success" }
+      invalid_result = { count: 42 }
       refute JSON::Validator.validate(json_schema, invalid_result)
     end
 
@@ -116,17 +113,16 @@ module AgentC
       success_hash_schema = {
         type: "object",
         properties: {
-          status: { type: "string", enum: ["success"] },
           data: { type: "string" }
         },
-        required: ["status"]
+        required: ["data"]
       }
 
       test_schema = Schema.result(schema: success_hash_schema)
       json_schema = test_schema&.to_json_schema&.fetch(:schema)
 
       # Test error case still works
-      result = { status: "error", message: "Something went wrong" }
+      result = { unable_to_fulfill_request_error: "Something went wrong" }
       assert JSON::Validator.validate(json_schema, result)
     end
   end

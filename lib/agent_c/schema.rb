@@ -41,14 +41,13 @@ module AgentC
 
     class ErrorSchema < RubyLLM::Schema
       string(
-        :status,
-        enum: ["error"],
-      )
-
-      string(
-        :message,
+        :unable_to_fulfill_request_error,
         description: <<~TXT
-          A brief description of the reason you could not fulfill the request.
+          Only fill out this field if you are unable to perform the requested
+          task and/or unable to fulfill the other schema provided.
+
+          Fill this in a clear message indicating why you were unable to fulfill
+          the request.
         TXT
       )
     end
@@ -56,23 +55,10 @@ module AgentC
     def self.result(schema: nil, &)
       # Create the success schema
       success_schema = (
-        if schema.nil?
+        if block_given? || schema&.respond_to?(:call)
           Class.new(RubyLLM::Schema) do
-            string(
-              :status,
-              enum: ["success"],
-            )
-
             instance_exec(&) if block_given?
-          end
-        elsif schema.respond_to?(:call)
-          Class.new(RubyLLM::Schema) do
-            string(
-              :status,
-              enum: ["success"],
-            )
-
-            instance_exec(&schema)
+            instance_exec(&schema) if schema
           end
         else
           schema
