@@ -36,6 +36,13 @@ module AgentC
         self.steps << Step.new(name:, block:)
       end
 
+      def agent_review_loop(name, **params)
+        step(name) do
+          agent = Pipelines::Agent.new(self)
+          agent.agent_review_loop(name, **params)
+        end
+      end
+
       def agent_step(name, **params, &block)
         raise ArgumentError.new("Can't pass block and params") if params.any? && block
 

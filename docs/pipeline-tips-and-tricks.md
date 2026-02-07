@@ -6,6 +6,7 @@ This document contains useful patterns and techniques for working with AgentC pi
 
 - [Custom I18n Attributes](#custom-i18n-attributes)
 - [Rewinding to Previous Steps](#rewinding-to-previous-steps)
+- [Agent Review Loop](#agent-review-loop)
 
 ## Custom I18n Attributes
 
@@ -199,3 +200,254 @@ If a step name appears multiple times in `completed_steps`:
 ```ruby
 # This will raise an ArgumentError about non-distinct step names
 rewind_to!(:duplicate_step)
+```
+
+## Agent Review Loop
+
+The `agent_review_loop` method provides a declarative way to implement iterative review and refinement workflows. It automatically handles the loop logic where an agent implements a solution, reviewers provide feedback, and the agent iterates based on that feedback until the reviewers approve or a maximum number of tries is reached.
+
+### Use Case
+
+This is useful when:
+- You need an agent to generate code, designs, or content that requires review
+- Multiple reviewers need to evaluate the work from different perspectives
+- The agent should iterate based on feedback until reviewers approve
+- You want to capture review history for audit or debugging purposes
+- You need to limit the number of iteration attempts
+
+### Basic Example
+
+```ruby
+class RefactorPipeline < AgentC::Pipeline
+  agent_review_loop(
+    :refactor_code,
+    max_tries: 5,
+    implement: :initial_refactor,
+    iterate: :improve_refactor,
+    review: :code_review
+  )
+end
+```
+
+With i18n translations:
+
+```yaml
+en:
+  initial_refactor:
+    prompt: "Refactor the code to improve readability"
+    response_schema:
+      code:
+        description: "The refactored code"
+
+  improve_refactor:
+    prompt: |
+      The previous refactor received this feedback:
+      %{feedback}
+
+      Please improve the refactor based on this feedback.
+    response_schema:
+      code:
+        description: "The improved refactored code"
+
+  code_review:
+    prompt: |
+      Review this code change:
+      %{diff}
+
+      Is it ready to merge?
+    response_schema:
+      approved:
+        type: boolean
+        description: "Whether the code is approved"
+      feedback:
+        type: string
+        description: "Feedback if not approved (empty if approved)"
+```
+
+### How It Works
+
+The `agent_review_loop` executes in iterations:
+
+1. **First iteration (try 0)**:
+   - Runs all `implement` steps in order
+   - If any implement step fails, the loop stops and marks the task as failed
+   - Captures git diff of changes
+   - Runs all `review` steps with the diff
+   - Collects feedback from any reviewers who don't approve
+
+2. **Subsequent iterations (try 1+)**:
+   - Runs all `iterate` steps with accumulated feedback
+   - If any iterate step fails, the loop stops and marks the task as failed
+   - Captures git diff of changes
+   - Runs all `review` steps with the new diff
+   - Collects feedback from any reviewers who don't approve
+
+3. **Loop continues until**:
+   - All reviewers approve (feedback list is empty), OR
+   - `max_tries` is reached, OR
+   - Any step fails, OR
+   - The task is marked as failed by other means
+
+### Multiple Steps
+
+You can specify multiple steps for implement, iterate, and review:
+
+```ruby
+agent_review_loop(
+  :multi_file_refactor,
+  max_tries: 5,
+  implement: [
+    :refactor_controller,
+    :refactor_model,
+    :refactor_view
+  ],
+  iterate: [
+    :improve_controller,
+    :improve_model,
+    :improve_view
+  ],
+  review: [
+    :code_quality_review,
+    :security_review,
+    :performance_review
+  ]
+)
+```
+
+Steps are executed in order. If any step fails, the loop stops immediately.
+
+### Feedback Interpolation
+
+The `iterate` steps automatically receive a `%{feedback}` interpolation variable containing all feedback from reviewers, joined with `"\n---\n"` as a separator:
+
+```yaml
+improve_refactor:
+  prompt: |
+    Previous feedback from reviewers:
+    %{feedback}
+
+    Please address all concerns.
+```
+
+### Review Schema
+
+Your "review" I18n should **not** include any response schema. AgentC will
+configure the schema for you.
+
+Review steps must return a response with these fields:
+- `approved` (boolean): Whether the work is approved
+- `feedback` (string): Feedback message if not approved (can be empty string if approved)
+
+If a review step fails to return valid data, the task is marked as failed.
+
+### Optional: Recording Reviews
+
+If your record implements an `add_review` method, it will be called after each review iteration with the diff and collected feedback:
+
+```ruby
+record(:my_record) do
+  schema do |t|
+    t.json(:reviews, default: [])
+  end
+
+  def add_review(diff:, feedbacks:)
+    self.reviews ||= []
+    self.reviews << {
+      timestamp: Time.now.iso8601,
+      diff: diff,
+      feedbacks: feedbacks
+    }
+    save!
+  end
+end
+```
+
+This allows you to maintain a complete history of all review iterations.
+
+### Default Iterate Behavior
+
+If you don't specify `iterate`, it defaults to the same value as `implement`:
+
+```ruby
+# These are equivalent:
+agent_review_loop(:refactor, implement: :refactor_code, review: :review)
+agent_review_loop(:refactor, implement: :refactor_code, iterate: :refactor_code, review: :review)
+```
+
+This is useful when the same prompt can handle both initial implementation and iteration based on feedback.
+
+### Important Notes
+
+**Required parameters**: You must provide either `implement` or `iterate` (or both). Providing only `review` will raise an `ArgumentError`.
+
+**Max tries behavior**: When `max_tries` is reached, the loop completes the step successfully even if reviews haven't all approved. The loop doesn't fail the task when max tries is exceeded.
+
+**Git diff**: The git diff is captured after each iteration's implementation/iteration steps complete, and is passed to review steps via the `%{diff}` interpolation variable.
+
+**Failure handling**: If any implement, iterate, or review step returns invalid data or raises an exception, the entire agent_review_loop step is marked as failed and the task stops.
+
+**Step naming**: The `agent_review_loop` counts as a single pipeline step with the name you provide (e.g., `:refactor_code`), not separate steps for each iteration.
+
+### Complete Example
+
+```ruby
+class DocumentationPipeline < AgentC::Pipeline
+  agent_review_loop(
+    :write_documentation,
+    max_tries: 3,
+    implement: [:draft_readme, :draft_examples],
+    iterate: [:improve_readme, :improve_examples],
+    review: [:technical_review, :style_review]
+  )
+
+  step(:publish) do
+    # Only reached if reviews passed or max_tries exceeded
+    record.update!(published: true)
+  end
+end
+```
+
+With a record that tracks review history:
+
+```ruby
+record(:documentation) do
+  schema do |t|
+    t.text(:readme_content)
+    t.text(:examples_content)
+    t.json(:review_history, default: [])
+    t.boolean(:published, default: false)
+  end
+
+  def add_review(diff:, feedbacks:)
+    self.review_history << {
+      iteration: review_history.length + 1,
+      timestamp: Time.now.iso8601,
+      diff_size: diff.length,
+      feedback_count: feedbacks.length,
+      feedbacks: feedbacks
+    }
+    save!
+  end
+
+  def i18n_attributes
+    attributes.merge(
+      total_reviews: review_history.length,
+      last_feedback: review_history.last&.dig("feedbacks")&.join("\n---\n") || "none"
+    )
+  end
+end
+```
+
+### When to Use agent_review_loop vs rewind_to!
+
+Use `agent_review_loop` when:
+- The review and iteration logic is straightforward and consistent
+- You want a declarative approach with less boilerplate
+- Multiple reviewers are involved
+- You want automatic feedback collection and interpolation
+
+Use `rewind_to!` when:
+- You need custom logic to determine whether to retry
+- The retry conditions are complex or context-dependent
+- You need to rewind to steps other than the immediate previous one
+- You want explicit control over the retry logic
