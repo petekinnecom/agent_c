@@ -384,5 +384,63 @@ module AgentC
         workspaces.last.attributes.symbolize_keys.except(:id)
       )
     end
+
+    def test_call_with_block_invoked_after_each_step
+      called_with_tasks = []
+
+      pipeline_class = Class.new(Pipeline) do
+        step(:step_1) do
+          record.update!(attr_1: "step_1_done")
+        end
+
+        step(:step_2) do
+          record.update!(attr_2: "step_2_done")
+        end
+
+        step(:step_3) do
+          record.update!(attr_3: "step_3_done")
+        end
+      end
+
+      batch = Batch.new(
+        store: @store,
+        workspace: @workspace,
+        session: @session,
+        record_type: :my_record,
+        pipeline: pipeline_class
+      )
+
+      record1 = @store.my_record.create!(attr_1: "initial", attr_2: "initial", attr_3: "initial")
+      record2 = @store.my_record.create!(attr_1: "initial", attr_2: "initial", attr_3: "initial")
+
+      batch.add_task(record1)
+      batch.add_task(record2)
+
+      batch.call do |task|
+        called_with_tasks << task
+      end
+
+      assert_equal 2, called_with_tasks.count
+
+      assert_equal(called_with_tasks.sort_by(&:id), @store.task.all.order(:id))
+
+      final_tasks = @store.task.all
+      assert_equal 2, final_tasks.size
+      final_tasks.each do |task|
+        assert_equal "done", task.status
+        assert_equal ["step_1", "step_2", "step_3"], task.completed_steps
+      end
+
+      # Verify records were updated correctly
+      record1.reload
+      assert_equal "step_1_done", record1.attr_1
+      assert_equal "step_2_done", record1.attr_2
+      assert_equal "step_3_done", record1.attr_3
+
+      record2.reload
+      assert_equal "step_1_done", record2.attr_1
+      assert_equal "step_2_done", record2.attr_2
+      assert_equal "step_3_done", record2.attr_3
+    end
   end
 end

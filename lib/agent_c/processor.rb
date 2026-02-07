@@ -66,7 +66,7 @@ module AgentC
     def call_synchronous(workspace)
       while(handler = next_handler(workspace))
         handler.call
-        yield if block_given? # allow the invoker to do work inbetween handler calls
+        yield(handler.task) if block_given? # allow the invoker to do work inbetween handler calls
       end
     end
 

@@ -23,8 +23,8 @@ module AgentC
       @git = git
     end
 
-    def call
-      processor.call
+    def call(&)
+      processor.call(&)
     end
 
     def add_task(record)
