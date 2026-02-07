@@ -336,7 +336,7 @@ I suggest following the structure of the [example template](./template).
 
 Detailed guides for all features:
 
-- **[Main README](../README.md)** - Batch and Pipeline usage (primary approach)
+- **[Batch](docs/batch.md)** - Batch configuration, methods, and pipeline integration
 - **[Pipeline Tips and Tricks](docs/pipeline-tips-and-tricks.md)** - Useful patterns and techniques for pipelines
 - **[Chat Methods](docs/chat-methods.md)** - Using session.prompt and session.chat for direct interactions
 - **[Tools](docs/tools.md)** - Built-in tools for file operations and code interaction
