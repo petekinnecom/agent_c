@@ -43,13 +43,51 @@ module AgentC
       pending_count = tasks.count { |task| task.pending? }
       failed_count = tasks.count { |task| task.failed? }
 
+      out.puts "Total: #{tasks.count}"
       out.puts "Succeeded: #{succeeded_count}"
       out.puts "Pending: #{pending_count}"
       out.puts "Failed: #{failed_count}"
 
+      # Calculate time span
+      if tasks.any?
+        created_ats = tasks.map(&:created_at).compact
+        updated_ats = tasks.map(&:updated_at).compact
+
+        if created_ats.any? && updated_ats.any?
+          earliest = created_ats.min
+          latest = updated_ats.max
+          time_span_seconds = (latest - earliest).to_i
+
+          hours = time_span_seconds / 3600
+          minutes = (time_span_seconds % 3600) / 60
+          seconds = time_span_seconds % 60
+
+          out.puts "Time: #{hours} hrs, #{minutes} mins, #{seconds} secs"
+        end
+      end
+
+      # Count worktrees
+      worktree_count = store.workspace.count
+      out.puts "Worktrees: #{worktree_count}"
+
       cost_data = session.cost
       out.puts "Run cost: $#{'%.2f' % cost_data.run}"
       out.puts "Project total cost: $#{'%.2f' % cost_data.project}"
+
+      # Cost and time per task
+      if tasks.count > 0
+        cost_per_task = (cost_data.run * worktree_count.to_f) / tasks.count.to_f
+        out.puts "Cost per task: $#{'%.2f' % cost_per_task}"
+
+        if tasks.any? && created_ats&.any? && updated_ats&.any?
+          total_minutes = time_span_seconds / 60.0
+          # Account for parallelism: if we have multiple worktrees,
+          # tasks could run in parallel
+          effective_minutes = worktree_count > 0 ? total_minutes / worktree_count : total_minutes
+          minutes_per_task = effective_minutes / tasks.count
+          out.puts "Minutes per task: #{'%.2f' % minutes_per_task}"
+        end
+      end
 
       if failed_count > 0
         out.puts "\nFirst #{[failed_count, 3].min} failed task(s):"

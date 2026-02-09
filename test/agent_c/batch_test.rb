@@ -261,7 +261,7 @@ module AgentC
     def test_report_with_no_tasks
       report = @batch.report
 
-      assert_equal "Succeeded: 0\nPending: 0\nFailed: 0\nRun cost: $0.00\nProject total cost: $0.00\n", report
+      assert_equal "Total: 0\nSucceeded: 0\nPending: 0\nFailed: 0\nWorktrees: 1\nRun cost: $0.00\nProject total cost: $0.00\n", report
     end
 
     def test_report_with_succeeded_tasks
@@ -274,7 +274,17 @@ module AgentC
 
       report = @batch.report
 
-      assert_equal "Succeeded: 2\nPending: 0\nFailed: 0\nRun cost: $0.00\nProject total cost: $0.00\n", report
+      # Check that the report contains expected sections
+      assert_match(/^Total: 2$/, report)
+      assert_match(/^Succeeded: 2$/, report)
+      assert_match(/^Pending: 0$/, report)
+      assert_match(/^Failed: 0$/, report)
+      assert_match(/^Time: \d+ hrs, \d+ mins, \d+ secs$/, report)
+      assert_match(/^Worktrees: 1$/, report)
+      assert_match(/^Run cost: \$0\.00$/, report)
+      assert_match(/^Project total cost: \$0\.00$/, report)
+      assert_match(/^Cost per task: \$0\.00$/, report)
+      assert_match(/^Minutes per task: \d+\.\d+$/, report)
     end
 
     def test_report_with_mixed_statuses
@@ -285,8 +295,19 @@ module AgentC
 
       report = @batch.report
 
-      expected = "Succeeded: 1\nPending: 1\nFailed: 1\nRun cost: $0.00\nProject total cost: $0.00\n\nFirst 1 failed task(s):\n- Error 1\n"
-      assert_equal expected, report
+      # Check that the report contains expected sections
+      assert_match(/^Total: 3$/, report)
+      assert_match(/^Succeeded: 1$/, report)
+      assert_match(/^Pending: 1$/, report)
+      assert_match(/^Failed: 1$/, report)
+      assert_match(/^Time: \d+ hrs, \d+ mins, \d+ secs$/, report)
+      assert_match(/^Worktrees: 1$/, report)
+      assert_match(/^Run cost: \$0\.00$/, report)
+      assert_match(/^Project total cost: \$0\.00$/, report)
+      assert_match(/^Cost per task: \$0\.00$/, report)
+      assert_match(/^Minutes per task: \d+\.\d+$/, report)
+      assert_match(/First 1 failed task\(s\):/, report)
+      assert_match(/- Error 1/, report)
     end
 
     def test_report_limits_failed_tasks_to_three
@@ -301,8 +322,23 @@ module AgentC
 
       report = @batch.report
 
-      expected = "Succeeded: 0\nPending: 0\nFailed: 5\nRun cost: $0.00\nProject total cost: $0.00\n\nFirst 3 failed task(s):\n- Error 1\n- Error 2\n- Error 3\n"
-      assert_equal expected, report
+      # Check that the report contains expected sections
+      assert_match(/^Total: 5$/, report)
+      assert_match(/^Succeeded: 0$/, report)
+      assert_match(/^Pending: 0$/, report)
+      assert_match(/^Failed: 5$/, report)
+      assert_match(/^Time: \d+ hrs, \d+ mins, \d+ secs$/, report)
+      assert_match(/^Worktrees: 1$/, report)
+      assert_match(/^Run cost: \$0\.00$/, report)
+      assert_match(/^Project total cost: \$0\.00$/, report)
+      assert_match(/^Cost per task: \$0\.00$/, report)
+      assert_match(/^Minutes per task: \d+\.\d+$/, report)
+      assert_match(/First 3 failed task\(s\):/, report)
+      assert_match(/- Error 1/, report)
+      assert_match(/- Error 2/, report)
+      assert_match(/- Error 3/, report)
+      refute_match(/- Error 4/, report)
+      refute_match(/- Error 5/, report)
     end
 
     def test_worktrees_auto_created
@@ -383,6 +419,44 @@ module AgentC
         { dir: worktree_1_dir, env: { "SOME_ENV_VAR" => "1" }},
         workspaces.last.attributes.symbolize_keys.except(:id)
       )
+    end
+
+    def test_report_shows_comprehensive_stats
+      # Create multiple worktrees
+      workspace1 = @store.workspace.create!(dir: "/tmp/workspace1", env: {})
+      workspace2 = @store.workspace.create!(dir: "/tmp/workspace2", env: {})
+
+      # Create tasks with known timestamps
+      task1 = @store.task.create!(
+        status: "done",
+        handler: "my_record",
+        workspace: workspace1,
+        created_at: Time.now - 120, # 2 minutes ago
+        updated_at: Time.now - 60    # 1 minute ago
+      )
+      task2 = @store.task.create!(
+        status: "done",
+        handler: "my_record",
+        workspace: workspace2,
+        created_at: Time.now - 120,
+        updated_at: Time.now         # now
+      )
+
+      report = @batch.report
+
+      # Should have 3 worktrees (initial workspace + 2 new ones)
+      assert_match(/^Total: 2$/, report)
+      assert_match(/^Worktrees: 3$/, report)
+      assert_match(/^Time: 0 hrs, 2 mins, \d+ secs$/, report)
+
+      # Minutes per task should account for parallelism
+      # Total time: ~2 minutes, 3 worktrees, 2 tasks
+      # Effective time per task: (2 minutes / 3 worktrees) / 2 tasks = ~0.33 minutes
+      assert_match(/^Minutes per task: \d+\.\d+$/, report)
+
+      # Cost per task now multiplies by worktree count
+      # (0.00 * 3 worktrees) / 2 tasks = $0.00
+      assert_match(/^Cost per task: \$0\.00$/, report)
     end
 
     def test_call_with_block_invoked_after_each_step
