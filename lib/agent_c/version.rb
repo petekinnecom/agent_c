@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module AgentC
-  VERSION = "2.99"
+  VERSION = "2.997"
 end
